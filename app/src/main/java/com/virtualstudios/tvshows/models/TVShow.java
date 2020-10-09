@@ -8,55 +8,55 @@ public class TVShow {
     private int id;
 
     @SerializedName("name")
-    private int name;
+    private String  name;
 
     @SerializedName("start_date")
-    private int startDate;
+    private String startDate;
 
     @SerializedName("end_date")
-    private int endDate;
+    private String endDate;
 
     @SerializedName("country")
-    private int country;
+    private String country;
 
     @SerializedName("network")
-    private int network;
+    private String network;
 
     @SerializedName("status")
-    private int status;
+    private String status;
 
     @SerializedName("image_thumbnail_path")
-    private int thumbnail;
+    private String thumbnail;
 
     public int getId() {
         return id;
     }
 
-    public int getName() {
+    public String getName() {
         return name;
     }
 
-    public int getStartDate() {
+    public String getStartDate() {
         return startDate;
     }
 
-    public int getEndDate() {
+    public String getEndDate() {
         return endDate;
     }
 
-    public int getCountry() {
+    public String getCountry() {
         return country;
     }
 
-    public int getNetwork() {
+    public String getNetwork() {
         return network;
     }
 
-    public int getStatus() {
+    public String getStatus() {
         return status;
     }
 
-    public int getThumbnail() {
+    public String getThumbnail() {
         return thumbnail;
     }
 }

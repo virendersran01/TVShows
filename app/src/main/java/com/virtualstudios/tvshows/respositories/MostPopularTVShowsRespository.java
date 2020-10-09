@@ -1,5 +1,7 @@
 package com.virtualstudios.tvshows.respositories;
 
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -26,11 +28,13 @@ public class MostPopularTVShowsRespository {
             @Override
             public void onResponse(@NonNull Call<TVShowsResponse> call, @NonNull Response<TVShowsResponse> response) {
                 data.setValue(response.body());
+                Log.d("TAG", "onResponse: "+response.body());
             }
 
             @Override
             public void onFailure(@NonNull Call<TVShowsResponse> call, @NonNull Throwable t) {
                 data.setValue(null);
+                Log.d("TAG", "onFailure: "+t.getMessage());
             }
         });
         return data;

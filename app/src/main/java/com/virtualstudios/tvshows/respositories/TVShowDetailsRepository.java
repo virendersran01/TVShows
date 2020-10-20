@@ -1,7 +1,5 @@
 package com.virtualstudios.tvshows.respositories;
 
-import android.util.Log;
-
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -32,7 +30,6 @@ public class TVShowDetailsRepository {
 
             @Override
             public void onFailure(@NonNull Call<TVShowDetailsResponse> call, @NonNull Throwable t) {
-                Log.d("TAG", "onFailure: "+t.getMessage());
                 data.setValue(null);
             }
         });

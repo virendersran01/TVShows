@@ -3,6 +3,7 @@ package com.virtualstudios.tvshows.activities;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.TextUtils;
@@ -12,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -26,9 +28,14 @@ import com.virtualstudios.tvshows.adapters.EpisodesAdapter;
 import com.virtualstudios.tvshows.adapters.ImageSliderAdapter;
 import com.virtualstudios.tvshows.databinding.ActivityTVShowDetailsBinding;
 import com.virtualstudios.tvshows.databinding.LayoutEpisodesBottomSheetBinding;
+import com.virtualstudios.tvshows.models.TVShow;
 import com.virtualstudios.tvshows.viewmodels.TVShowDetailsViewModel;
 
 import java.util.Locale;
+
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class TVShowDetailsActivity extends AppCompatActivity {
 
@@ -36,6 +43,7 @@ public class TVShowDetailsActivity extends AppCompatActivity {
     private TVShowDetailsViewModel tvShowDetailsViewModel;
     private BottomSheetDialog episodesBottomSheetDialog;
     private LayoutEpisodesBottomSheetBinding layoutEpisodesBottomSheetBinding;
+    private TVShow tvShow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,12 +55,13 @@ public class TVShowDetailsActivity extends AppCompatActivity {
     private void doInitialization() {
         tvShowDetailsViewModel = new ViewModelProvider(this).get(TVShowDetailsViewModel.class);
         activityTVShowDetailsBinding.imageBack.setOnClickListener(v -> onBackPressed());
+        tvShow = (TVShow) getIntent().getSerializableExtra("tvShow");
         getTVShowDetails();
     }
 
     private void getTVShowDetails() {
         activityTVShowDetailsBinding.setIsLoading(true);
-        String tvShowId = String.valueOf(getIntent().getIntExtra("id", -1));
+        String tvShowId = String.valueOf(tvShow.getId());
         tvShowDetailsViewModel.getTVShowDetails(tvShowId).observe(this,
                 tvShowDetailsResponse -> {
                     activityTVShowDetailsBinding.setIsLoading(false);
@@ -64,14 +73,24 @@ public class TVShowDetailsActivity extends AppCompatActivity {
                                 tvShowDetailsResponse.getTvShowDetails().getImagePath()
                         );
                         activityTVShowDetailsBinding.imageTVShow.setVisibility(View.VISIBLE);
-                        activityTVShowDetailsBinding.setDescription(
-                                String.valueOf(
-                                        Html.fromHtml(
-                                                tvShowDetailsResponse.getTvShowDetails().getDescription(),
-                                                Html.FROM_HTML_MODE_LEGACY
-                                        )
-                                )
-                        );
+                        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.M){
+                            activityTVShowDetailsBinding.setDescription(
+                                    String.valueOf(
+                                            Html.fromHtml(
+                                                    tvShowDetailsResponse.getTvShowDetails().getDescription()
+                                            )
+                                    )
+                            );
+                        }else {
+                            activityTVShowDetailsBinding.setDescription(
+                                    String.valueOf(
+                                            Html.fromHtml(
+                                                    tvShowDetailsResponse.getTvShowDetails().getDescription(),
+                                                    Html.FROM_HTML_MODE_LEGACY
+                                            )
+                                    )
+                            );
+                        }
                         activityTVShowDetailsBinding.textDescription.setVisibility(View.VISIBLE);
                         activityTVShowDetailsBinding.textReadMore.setVisibility(View.VISIBLE);
                         activityTVShowDetailsBinding.textReadMore.setOnClickListener(v -> {
@@ -110,7 +129,7 @@ public class TVShowDetailsActivity extends AppCompatActivity {
                         activityTVShowDetailsBinding.buttonWebsite.setVisibility(View.VISIBLE);
                         activityTVShowDetailsBinding.buttonEpisodes.setVisibility(View.VISIBLE);
                         activityTVShowDetailsBinding.buttonEpisodes.setOnClickListener(v -> {
-                            if (episodesBottomSheetDialog == null){
+                            if (episodesBottomSheetDialog == null) {
                                 episodesBottomSheetDialog = new BottomSheetDialog(TVShowDetailsActivity.this);
                                 layoutEpisodesBottomSheetBinding = DataBindingUtil.inflate(
                                         LayoutInflater.from(TVShowDetailsActivity.this),
@@ -124,7 +143,7 @@ public class TVShowDetailsActivity extends AppCompatActivity {
                                         new EpisodesAdapter(tvShowDetailsResponse.getTvShowDetails().getEpisodes())
                                 );
                                 layoutEpisodesBottomSheetBinding.textTitle.setText(
-                                        String.format("Episodes | %s", getIntent().getStringExtra("name"))
+                                        String.format("Episodes | %s", tvShow.getName())
                                 );
                                 layoutEpisodesBottomSheetBinding.imageClose.setOnClickListener(v1 -> {
                                     episodesBottomSheetDialog.dismiss();
@@ -134,7 +153,7 @@ public class TVShowDetailsActivity extends AppCompatActivity {
                                 FrameLayout frameLayout = episodesBottomSheetDialog.findViewById(
                                         com.google.android.material.R.id.design_bottom_sheet
                                 );
-                                if (frameLayout != null){
+                                if (frameLayout != null) {
                                     BottomSheetBehavior<View> bottomSheetBehavior = BottomSheetBehavior.from(frameLayout);
                                     bottomSheetBehavior.setPeekHeight(Resources.getSystem().getDisplayMetrics().heightPixels);
                                     bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
@@ -145,6 +164,15 @@ public class TVShowDetailsActivity extends AppCompatActivity {
                                 episodesBottomSheetDialog.show();
                             }
                         });
+                        activityTVShowDetailsBinding.imageWatchlist.setOnClickListener(v -> new CompositeDisposable().add(tvShowDetailsViewModel.addToWatchlist(tvShow)
+                                .subscribeOn(Schedulers.io())
+                                .observeOn(AndroidSchedulers.mainThread())
+                                .subscribe(() -> {
+                                    activityTVShowDetailsBinding.imageWatchlist.setImageResource(R.drawable.ic_added);
+                                    Toast.makeText(getApplicationContext(), "Added to watchlist", Toast.LENGTH_SHORT).show();
+                                })
+                        ));
+                        activityTVShowDetailsBinding.imageWatchlist.setVisibility(View.VISIBLE);
                         loadBasicTvShowDetails();
                     }
 
@@ -201,13 +229,13 @@ public class TVShowDetailsActivity extends AppCompatActivity {
     }
 
     private void loadBasicTvShowDetails() {
-        activityTVShowDetailsBinding.setTvShowName(getIntent().getStringExtra("name"));
+        activityTVShowDetailsBinding.setTvShowName(tvShow.getName());
         activityTVShowDetailsBinding.setNetworkCountry(
-                getIntent().getStringExtra("network") + " (" +
-                        getIntent().getStringExtra("country") + ")"
+                tvShow.getNetwork() + " (" +
+                        tvShow.getCountry() + ")"
         );
-        activityTVShowDetailsBinding.setStatus(getIntent().getStringExtra("status"));
-        activityTVShowDetailsBinding.setStartedDate(getIntent().getStringExtra("startDate"));
+        activityTVShowDetailsBinding.setStatus(tvShow.getStatus());
+        activityTVShowDetailsBinding.setStartedDate(tvShow.getStartDate());
         activityTVShowDetailsBinding.textName.setVisibility(View.VISIBLE);
         activityTVShowDetailsBinding.textNetworkCountry.setVisibility(View.VISIBLE);
         activityTVShowDetailsBinding.textStatus.setVisibility(View.VISIBLE);
